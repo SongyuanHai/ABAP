@@ -1,0 +1,46 @@
+*&---------------------------------------------------------------------*
+*& Report  Z_DEL_BLOCK_TEST
+*&
+*&---------------------------------------------------------------------*
+*& Delivery BLOCK Testing program
+*&
+*&---------------------------------------------------------------------*
+
+REPORT  Z_DEL_BLOCK_TEST.
+
+DATA : ls_bapiobdlvhdrchg TYPE bapiobdlvhdrchg,
+       ls_bapiobdlvhdrctrlchg TYPE bapiobdlvhdrctrlchg,
+       lt_bapireturn type STANDARD TABLE OF bapiret2,
+       lv_LIFSK type LIFSK.
+
+SELECTION-SCREEN BEGIN OF BLOCK b1 WITH FRAME.
+PARAMETERS: p_VBELN type VBELN_VL,
+            p_LIFSK TYPE LIFSK.
+SELECTION-SCREEN END OF BLOCK b1.
+
+
+ls_bapiobdlvhdrchg-deliv_numb = p_VBELN.
+ls_bapiobdlvhdrchg-dlv_block = p_LIFSK.
+ls_bapiobdlvhdrctrlchg-deliv_numb = p_VBELN.
+ls_bapiobdlvhdrctrlchg-dlv_block_flg = 'X'.
+
+
+*write: p_VBELN, p_LIFSK.
+
+CALL FUNCTION 'BAPI_OUTB_DELIVERY_CHANGE'
+  EXPORTING
+    header_data    = ls_bapiobdlvhdrchg
+    header_control = ls_bapiobdlvhdrctrlchg
+    delivery       = p_VBELN
+  TABLES
+    return         = lt_bapireturn.
+
+READ TABLE lt_bapireturn WITH KEY type = 'E' TRANSPORTING NO FIELDS.
+
+if NOT sy-subrc is initial.
+  CALL FUNCTION 'BAPI_TRANSACTION_COMMIT'
+    EXPORTING
+      wait = 'X'.
+ELSE.
+  ROLLBACK WORK.
+ENDIF.
